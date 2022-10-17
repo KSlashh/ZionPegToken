@@ -35,10 +35,19 @@ contract ZionPegToken is Ownable, Pausable, ReentrancyGuard, Core, ERC20 {
     event RelayInterrupted(uint64 fromChainId, address zionReceiveAddress, uint amount, string err);
     event RevertEvent(string err);
 
+    function setManagerContract(address _managerContractAddress) public onlyOwner {
+        managerContractAddress=_managerContractAddress;
+    }
+
     // User functions 
     function withdraw(bytes memory toAddress, uint64 toChainId, uint256 amount) public nonReentrant whenNotPaused {
         require(amount != 0, "amount cannot be zero!");
+
+        require(chainLiquidityMap[toChainId] >= amount,"target chain liquidity is not enough!");
+        chainLiquidityMap[toChainId]-=amount;
+        
         _burn(msg.sender, amount);
+
         sendWithdrawToBranch(toChainId, toAddress, amount);
     }
     

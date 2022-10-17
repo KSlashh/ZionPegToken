@@ -101,8 +101,12 @@ contract Vault is Branch, ReentrancyGuard, Pausable {
             require(msg.value == amount, "transferred ether is not equal to amount!");
         } else {
             require(msg.value == 0, "there should be no ether transfer!");
+            require(amount!=0,"amout is 0");
             IERC20 erc20Token = IERC20(token);
-            erc20Token.safeTransferFrom(token, msg.sender, amount);
+            uint beforeTransfer=IERC20(token).balanceOf(address(this));
+            erc20Token.safeTransferFrom(msg.sender,address(this), amount);
+            uint afterTransfer=IERC20(token).balanceOf(address(this));
+            require(afterTransfer==beforeTransfer+amount,"balance is incorrect");
         }
     }
 
@@ -112,7 +116,10 @@ contract Vault is Branch, ReentrancyGuard, Pausable {
             payable(address(uint160(toAddress))).transfer(amount);
         } else {
             IERC20 erc20Token = IERC20(token);
+            uint beforeTransfer=IERC20(token).balanceOf(address(this));
             erc20Token.safeTransfer(toAddress, amount);
+            uint afterTransfer=IERC20(token).balanceOf(address(this));
+            require(afterTransfer==beforeTransfer-amount,"balance is incorrect");
         }
     }
 
