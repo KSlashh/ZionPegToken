@@ -10,9 +10,9 @@ library Codec {
     TAG constant PAUSE_TAG = TAG.wrap(0x01);
     TAG constant UNPAUSE_TAG = TAG.wrap(0x02);
     TAG constant ROLLBACK_TAG = TAG.wrap(0x03);
-    TAG constant DEPOSITE_TAG = TAG.wrap(0x04);
+    TAG constant DEPOSIT_TAG = TAG.wrap(0x04);
     TAG constant WITHDRAW_TAG = TAG.wrap(0x05);
-    TAG constant DEPOSITE_AND_WITHDRAW_TAG = TAG.wrap(0x06);
+    TAG constant DEPOSIT_AND_WITHDRAW_TAG = TAG.wrap(0x06);
 
     function getTag(bytes memory message) pure public returns(TAG) {
         return TAG.wrap(message[0]);
@@ -73,18 +73,18 @@ library Codec {
 
 
 
-    function encodeDepositeMessage(bytes memory toAddress, bytes memory refundAddress, uint256 amount) pure public returns(bytes memory) {
+    function encodeDepositMessage(bytes memory toAddress, bytes memory refundAddress, uint256 amount) pure public returns(bytes memory) {
         bytes memory buff;
         buff = abi.encodePacked(
-            DEPOSITE_TAG,
+            DEPOSIT_TAG,
             ZeroCopySink.WriteVarBytes(toAddress),
             ZeroCopySink.WriteVarBytes(refundAddress),
             ZeroCopySink.WriteUint255(amount)
             );
         return buff;
     }
-    function decodeDepositeMessage(bytes memory rawData) pure public returns(bytes memory toAddress, bytes memory refundAddress, uint256 amount) {
-        require(compareTag(getTag(rawData), DEPOSITE_TAG), "Not deposite message");
+    function decodeDepositMessage(bytes memory rawData) pure public returns(bytes memory toAddress, bytes memory refundAddress, uint256 amount) {
+        require(compareTag(getTag(rawData), DEPOSIT_TAG), "Not deposit message");
         uint256 off = 1;
         (toAddress, off) = ZeroCopySource.NextVarBytes(rawData, off);
         (refundAddress, off) = ZeroCopySource.NextVarBytes(rawData, off);
@@ -111,10 +111,10 @@ library Codec {
 
 
 
-    function encodeDepositeAndWithdrawMessage(bytes memory toAddress, bytes memory refundAddress, bytes memory zionReceiveAddress, uint64 toChainId, uint256 amount) pure public returns(bytes memory) {
+    function encodeDepositAndWithdrawMessage(bytes memory toAddress, bytes memory refundAddress, bytes memory zionReceiveAddress, uint64 toChainId, uint256 amount) pure public returns(bytes memory) {
         bytes memory buff;
         buff = abi.encodePacked(
-            DEPOSITE_AND_WITHDRAW_TAG,
+            DEPOSIT_AND_WITHDRAW_TAG,
             ZeroCopySink.WriteVarBytes(toAddress),
             ZeroCopySink.WriteVarBytes(refundAddress),
             ZeroCopySink.WriteVarBytes(zionReceiveAddress),
@@ -123,8 +123,8 @@ library Codec {
             );
         return buff;
     }
-    function decodeDepositeAndWithdrawMessage(bytes memory rawData) pure public returns(bytes memory toAddress, bytes memory refundAddress, bytes memory zionReceiveAddress, uint64 toChainId, uint256 amount) {
-        require(compareTag(getTag(rawData), DEPOSITE_AND_WITHDRAW_TAG), "Not deposite_and_withdraw message");
+    function decodeDepositAndWithdrawMessage(bytes memory rawData) pure public returns(bytes memory toAddress, bytes memory refundAddress, bytes memory zionReceiveAddress, uint64 toChainId, uint256 amount) {
+        require(compareTag(getTag(rawData), DEPOSIT_AND_WITHDRAW_TAG), "Not deposit_and_withdraw message");
         uint256 off = 1;
         (toAddress, off) = ZeroCopySource.NextVarBytes(rawData, off);
         (refundAddress, off) = ZeroCopySource.NextVarBytes(rawData, off);

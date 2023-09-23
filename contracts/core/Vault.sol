@@ -31,34 +31,34 @@ contract Vault is Branch, ReentrancyGuard, Pausable {
         }
     }
 
-    event DepositeAndWithdrawEvent(address fromAddress, address refundAddress, bytes zionReceiveAddress, bytes toAddress, uint64 toChainId, uint256 amount, uint256 pegAmount);
-    event DepositeEvent(address fromAddress, address refundAddress, bytes toAddress, uint256 amount, uint256 pegAmount);
+    event DepositAndWithdrawEvent(address fromAddress, address refundAddress, bytes zionReceiveAddress, bytes toAddress, uint64 toChainId, uint256 amount, uint256 pegAmount);
+    event DepositEvent(address fromAddress, address refundAddress, bytes toAddress, uint256 amount, uint256 pegAmount);
     event WithdrawEvent(address toAddress, uint256 amount, uint256 pegAmount);
     event RollBackEvent(address refundAddress, uint amount, uint256 pegAmount);
 
-    function deposite(address refundAddress, bytes memory toAddress, uint256 amount) public payable nonReentrant whenNotPaused {
+    function deposit(address refundAddress, bytes memory toAddress, uint256 amount) public payable nonReentrant whenNotPaused {
         uint256 pegAmount = rounding(amount, false);
 
         require(pegAmount != 0, "amount cannot be zero!");
         
         _transferToContract(amount);
         
-        sendMessageToCore(Codec.encodeDepositeMessage(toAddress, Utils.addressToBytes(refundAddress), pegAmount));
+        sendMessageToCore(Codec.encodeDepositMessage(toAddress, Utils.addressToBytes(refundAddress), pegAmount));
 
-        emit DepositeEvent(msg.sender, refundAddress, toAddress, amount, pegAmount);
+        emit DepositEvent(msg.sender, refundAddress, toAddress, amount, pegAmount);
     }
 
     // when withdraw failed, if `zionReceiveAddress` is valid zion address, fund will be sent to given address in zion, otherwise it will be sent back to refundAddress in source chain 
-    function depositeAndWithdraw(address refundAddress, bytes memory zionReceiveAddress, bytes memory toAddress, uint64 toChainId, uint256 amount) public payable nonReentrant whenNotPaused {
+    function depositAndWithdraw(address refundAddress, bytes memory zionReceiveAddress, bytes memory toAddress, uint64 toChainId, uint256 amount) public payable nonReentrant whenNotPaused {
         uint256 pegAmount = rounding(amount, false);
 
         require(pegAmount != 0, "amount cannot be zero!");
         
         _transferToContract(amount);
         
-        sendMessageToCore(Codec.encodeDepositeAndWithdrawMessage(toAddress, Utils.addressToBytes(refundAddress), zionReceiveAddress, toChainId, pegAmount));
+        sendMessageToCore(Codec.encodeDepositAndWithdrawMessage(toAddress, Utils.addressToBytes(refundAddress), zionReceiveAddress, toChainId, pegAmount));
 
-        emit DepositeAndWithdrawEvent(msg.sender, refundAddress, zionReceiveAddress, toAddress, toChainId, amount, pegAmount);
+        emit DepositAndWithdrawEvent(msg.sender, refundAddress, zionReceiveAddress, toAddress, toChainId, amount, pegAmount);
     }
 
     function handleCoreMessage(bytes memory message) override internal {

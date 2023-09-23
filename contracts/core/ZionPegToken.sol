@@ -29,7 +29,7 @@ contract ZionPegToken is Ownable, Pausable, ReentrancyGuard, Core, ERC20 {
     event Pause(uint64[] chainIds, bool needWait);
     event Unpause(uint64[] chainIds, bool needWait);
 
-    event DepositeEvent(uint64 fromChainId, address toAddress, uint256 amount);
+    event DepositEvent(uint64 fromChainId, address toAddress, uint256 amount);
     event WithdrawEvent(uint64 toChainId, bytes toAddress, uint amount);
     event RollBackEvent(uint64 fromChainId, bytes refundAddress, uint amount, string err);
     event RelayInterrupted(uint64 fromChainId, address zionReceiveAddress, uint amount, string err);
@@ -152,10 +152,10 @@ contract ZionPegToken is Ownable, Pausable, ReentrancyGuard, Core, ERC20 {
     // Handle message from branch
     function handleBranchMessage(uint64 branchChainId, bytes memory message) override internal {
         Codec.TAG tag = Codec.getTag(message);
-        if (Codec.compareTag(tag, Codec.DEPOSITE_TAG)) {
-            handleDeposite(branchChainId, message);
-        } else if (Codec.compareTag(tag, Codec.DEPOSITE_AND_WITHDRAW_TAG)) {
-            handleDepositeAndWithdraw(branchChainId, message);
+        if (Codec.compareTag(tag, Codec.DEPOSIT_TAG)) {
+            handleDeposit(branchChainId, message);
+        } else if (Codec.compareTag(tag, Codec.DEPOSIT_AND_WITHDRAW_TAG)) {
+            handleDepositAndWithdraw(branchChainId, message);
         } else {
             revert("Unknown tag");
         }
@@ -192,42 +192,42 @@ contract ZionPegToken is Ownable, Pausable, ReentrancyGuard, Core, ERC20 {
         emit WithdrawEvent(toChainId, toAddress, amount);
     }
 
-    function handleDeposite(uint64 fromChainId, bytes memory message) internal {
-        (bytes memory toAddressBytes, bytes memory refundAddress, uint256 amount) = Codec.decodeDepositeMessage(message);
+    function handleDeposit(uint64 fromChainId, bytes memory message) internal {
+        (bytes memory toAddressBytes, bytes memory refundAddress, uint256 amount) = Codec.decodeDepositMessage(message);
         (bool isValidMessage, string memory err) = checkMessage(fromChainId, message);
         if (!isValidMessage) {
-            sendRollBackToBranch(fromChainId, refundAddress, amount, string.concat("deposite error: ", err));
+            sendRollBackToBranch(fromChainId, refundAddress, amount, string.concat("deposit error: ", err));
             return;
         }
         chainLiquidityMap[fromChainId] += amount;
         address toAddress = Utils.bytesToAddress(toAddressBytes);
         _mint(toAddress, amount);
-        emit DepositeEvent(fromChainId, toAddress, amount);
+        emit DepositEvent(fromChainId, toAddress, amount);
     }
 
-    function handleDepositeAndWithdraw(uint64 fromChainId, bytes memory message) internal {
-        (bytes memory toAddress, bytes memory refundAddress, bytes memory zionReceiveAddress, uint64 toChainId, uint256 amount) = Codec.decodeDepositeAndWithdrawMessage(message);
+    function handleDepositAndWithdraw(uint64 fromChainId, bytes memory message) internal {
+        (bytes memory toAddress, bytes memory refundAddress, bytes memory zionReceiveAddress, uint64 toChainId, uint256 amount) = Codec.decodeDepositAndWithdrawMessage(message);
         (bool isValidMessage, string memory err) = checkMessage(fromChainId, message);
         if (!isValidMessage) {
-            sendRollBackToBranch(fromChainId, refundAddress, amount, string.concat("deposite_&_withdraw error: ", err));
+            sendRollBackToBranch(fromChainId, refundAddress, amount, string.concat("deposit_&_withdraw error: ", err));
             return;
         }
         if (paused()) {
-            sendRollBackToBranch(fromChainId, refundAddress, amount, string.concat("deposite_&_withdraw error: root contract is paused"));
+            sendRollBackToBranch(fromChainId, refundAddress, amount, string.concat("deposit_&_withdraw error: root contract is paused"));
             return;
         }
         bytes memory toBranch = branchMap[toChainId];
         if (toBranch.length == 0) {
-            handleRelayInterrupted(zionReceiveAddress, fromChainId, refundAddress, amount, "deposite_&_withdraw error: invalid toBranch");
+            handleRelayInterrupted(zionReceiveAddress, fromChainId, refundAddress, amount, "deposit_&_withdraw error: invalid toBranch");
             return;
         }
         if (chainLiquidityMap[toChainId] < amount) {
-            handleRelayInterrupted(zionReceiveAddress, fromChainId, refundAddress, amount, "deposite_&_withdraw error: target chain do not have enough liquidity");
+            handleRelayInterrupted(zionReceiveAddress, fromChainId, refundAddress, amount, "deposit_&_withdraw error: target chain do not have enough liquidity");
             return;
         }
         chainLiquidityMap[fromChainId] += amount;
         chainLiquidityMap[toChainId] -= amount;
-        emit DepositeEvent(fromChainId, address(0), amount);
+        emit DepositEvent(fromChainId, address(0), amount);
         sendWithdrawToBranch(toChainId, toAddress, amount);
     }
 }
